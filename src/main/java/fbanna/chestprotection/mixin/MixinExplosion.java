@@ -3,7 +3,7 @@ package fbanna.chestprotection.mixin;
 import java.util.List;
 
 import fbanna.chestprotection.ChestProtection;
-import fbanna.chestprotection.check.CheckChest;
+import fbanna.chestprotection.check.LockableChest;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ChestBlock;
 import net.minecraft.entity.Entity;
@@ -25,14 +25,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(Entity.class)
 public class MixinExplosion {
-
     @Inject(method = "canExplosionDestroyBlock", at = @At("HEAD"), cancellable = true)
     private void prevent_explosion(Explosion explosion, BlockView world, BlockPos pos, BlockState state, float power, CallbackInfoReturnable<Boolean> cir) {
         if (state.getBlock() instanceof ChestBlock) {
-            CheckChest book = new CheckChest(pos, explosion.getWorld());
-            if (book.chestStatus != CheckChest.status.CLEAR) {
-                cir.setReturnValue(false);
+            LockableChest chestEntity = (LockableChest) world.getBlockEntity(pos);
 
+            if (chestEntity != null && chestEntity.isLocked()) {
+                cir.setReturnValue(false);
             }
         }
     }

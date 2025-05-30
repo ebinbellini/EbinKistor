@@ -3,8 +3,8 @@
   "minVersion": "0.8.5",
   "package": "fbanna.chestprotection.mixin",
   "compatibilityLevel": "JAVA_21",
-  "server": ["MixinExplosion", "MixinWither", "MixinExtract", "MixinNeighbourChest", "MixinBreak"],
-  "client": ["MixinExplosion", "MixinWither", "MixinExtract", "MixinNeighbourChest", "MixinBreak"],
+  "server": ["MixinExplosion", "MixinWither", "MixinExtract", "MixinNeighbourChest", "LockableChestBlockEntityMixin"],
+  "client": ["MixinExplosion", "MixinWither", "MixinExtract", "MixinNeighbourChest", "LockableChestBlockEntityMixin"],
   "injectors": {
     "defaultRequire": 1
   }
