@@ -1,5 +1,7 @@
-*CHEST PROTECTION*
+## EbinKistor
+
 **Work in progress**
+
 Easy to use, vanilla friendly, fully server side trading and locking fabric mod for modern versions of Minecraft
 
 **Locking**
