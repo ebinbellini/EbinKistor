@@ -6,6 +6,7 @@ import fbanna.chestprotection.check.LockableChest;
 import fbanna.chestprotection.check.CheckChest;
 import fbanna.chestprotection.trade.TradeScreen;
 import fbanna.chestprotection.trade.setup.SetupScreen;
+import fbanna.chestprotection.trade.Bank;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,13 +42,18 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.block.SignBlock;
 import net.minecraft.block.enums.ChestType;
+import net.minecraft.server.MinecraftServer;
 
 import java.util.function.Function;
+import java.util.HashMap;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ChestProtection implements ModInitializer {
+
+    public static final String MOD_ID = "chestprotection";
 
     public static final Logger LOGGER = LoggerFactory.getLogger("ChestProtection");
 
@@ -61,7 +67,7 @@ public class ChestProtection implements ModInitializer {
         // Check for block use
         UseBlockCallback.EVENT.register(
                 (player, world, hand, hitResult) -> {
-                    // Check if the block is a minecraft:chest block 
+                    // Check if the block is a chest
                     if (world.getBlockState(hitResult.getBlockPos()).getBlock() == Blocks.CHEST) {
                         return OnChestClicked(player, world, hand, hitResult);
                     } else if (world.getBlockState(hitResult.getBlockPos()).getBlock() instanceof SignBlock) {
@@ -85,7 +91,6 @@ public class ChestProtection implements ModInitializer {
                         }
                         // Check if the chest is locked
                         if (lockableChest.isLocked()) {
-                            LOGGER.info("Chest at {} is locked by {}", pos, lockableChest.getLockOwner());
                             // If locked, check if the player is the one who locked it
                             if (!Objects.equals(lockableChest.getLockID(), player.getUuid().toString())) {
                                 player.sendMessage(
@@ -106,8 +111,6 @@ public class ChestProtection implements ModInitializer {
             if (hitResult.getBlockPos() == null || world.getBlockState(hitResult.getBlockPos()).getBlock() instanceof ChestBlock) {
                 ChestBlockEntity chestEntity = (ChestBlockEntity) world.getBlockEntity(hitResult.getBlockPos());
                 ChestBlock chestBlock = (ChestBlock) world.getBlockState(hitResult.getBlockPos()).getBlock();
-                player.sendMessage(
-                        Text.translatable("Du håller i en pinne för att interagera med kistor... Bra jobbat!").formatted(Formatting.GREEN), true);
 
                 BlockPos pos = hitResult.getBlockPos();
 
@@ -125,6 +128,25 @@ public class ChestProtection implements ModInitializer {
                         world.markDirty(pos);
                         player.sendMessage(
                                 Text.translatable("Kistan är nu upplåst!").formatted(Formatting.YELLOW), true);
+
+                        /* FOR TESTING BANK FUNCTIONALITY
+                        MinecraftServer server = world.getServer();
+                        Bank bank = Bank.getServerState(server);
+                        if (bank != null) {
+                            if (bank.getBalance(player.getUuid().toString()) > 0) {
+                                // Deduct a fee for unlocking the chest
+                                int unlockFee = 10; // Example fee
+                                bank.withdraw(player.getUuid().toString(), unlockFee);
+                                player.sendMessage(
+                                        Text.translatable("Du har betalat %d för att låsa upp kistan.".formatted(unlockFee)).formatted(Formatting.YELLOW), false);
+                                int balance = bank.getBalance(player.getUuid().toString());
+                                player.sendMessage(
+                                        Text.translatable("Nu har du %d blocksdaler".formatted(balance)).formatted(Formatting.BLUE), false);
+                            } else {
+                                player.sendMessage(
+                                        Text.translatable("Du har inte tillräckligt med pengar på ditt konto för att låsa upp kistan.").formatted(Formatting.RED), false);
+                            }
+                        }*/
 
                         // Check for double chest and unlock the other half
                         LOGGER.info("Checking for double chest for unlocking at {}", pos);

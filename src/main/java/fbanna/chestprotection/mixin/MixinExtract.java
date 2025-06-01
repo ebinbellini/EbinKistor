@@ -15,6 +15,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import fbanna.chestprotection.check.LockableChest;
 
+import fbanna.chestprotection.ChestProtection;
+
 import java.util.Objects;
 
 @Mixin(HopperBlockEntity.class)
@@ -22,16 +24,28 @@ public class MixinExtract {
 
     @Inject(method = "canExtract", at = @At("HEAD"), cancellable = true)
     private static void inject(Inventory hopperInventory, Inventory fromInventory, ItemStack stack, int slot, Direction facing, CallbackInfoReturnable<Boolean> cir) {
-        // Get the block that is being extracted from
         HopperBlockEntity hopper = (HopperBlockEntity) (Object) hopperInventory;
-        //net.minecraft.util.math.BlockPos blockPos = hopper.getPos().offset(facing);
-        net.minecraft.util.math.BlockPos blockPos = hopper.getPos().offset(Direction.UP);
         net.minecraft.world.World world = hopper.getWorld();
 
-        if (world.getBlockEntity(blockPos) instanceof LockableChest) {
-            LockableChest chestEntity = (LockableChest) world.getBlockEntity(blockPos);
+        // Check if the feeding chest is locked
+        net.minecraft.util.math.BlockPos feedingPos = hopper.getPos().offset(Direction.UP);
+        if (world.getBlockEntity(feedingPos) instanceof LockableChest) {
+            LockableChest chestEntity = (LockableChest) world.getBlockEntity(feedingPos);
             if (chestEntity.isLocked()) {
+                // Block extraction if the chest is locked
                 cir.setReturnValue(false);
+                return;
+            }
+        }
+
+        // Check if the receiving chest is locked
+        net.minecraft.util.math.BlockPos receivingPos = hopper.getPos().offset(facing);
+        if (world.getBlockEntity(receivingPos) instanceof LockableChest) {
+            LockableChest chestEntity = (LockableChest) world.getBlockEntity(receivingPos);
+            if (chestEntity.isLocked()) {
+                // Block extraction if the chest is locked
+                cir.setReturnValue(false);
+                return;
             }
         }
     }

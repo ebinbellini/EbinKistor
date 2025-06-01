@@ -9,9 +9,9 @@ Use a stick and right click on a chest. It is now locked! Only you can open it. 
 
 - explosions, eg. TNT, end crystals
 - Wither break mechanics
-- Placing chests next to it to move the book out of the first slot
+- Placing chests next to it
 - Breaking
-- hoppers
+- Hoppers
 
 Unlock using a stick again. Only you can unlock your chest.
 
