@@ -1,6 +1,5 @@
 package fbanna.chestprotection.trade;
 
-
 import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.Codec;
@@ -31,58 +30,34 @@ import net.minecraft.world.World;
 import fbanna.chestprotection.ChestProtection;
 
 public class Bank extends PersistentState {
+
     // A map to store the bank balances of players
     public static HashMap<String, Integer> accounts = new HashMap<>();
 
     static final int START_BALANCE = 1000;
 
-	/*public static final Codecs.StrictUnboundedMapCodec<String,Integer> BANK_CODEC = Codec.strictUnboundedMap(
-            Codec.STRING,
-            Codec.INT
-    );*/
-    //public static final MapCodec<HashMap<String, Integer>> ACCOUNT_CODEC = new UnboundedMapCodec<String, Integer>(
-    public static final UnboundedMapCodec<String, Integer> ACCOUNT_CODEC = new UnboundedMapCodec<String, Integer>(
-            Codec.STRING,
-            Codec.INT
-    );
-    //.fieldOf("accounts");
-                //ACCOUNT_CODEC.forGetter(bank -> bank.accounts)
-
-    public static final Codec<Bank> BANK_CODEC = RecordCodecBuilder.create(
-			instance -> instance.group(
-                ACCOUNT_CODEC.fieldOf("accounts").forGetter(bank -> bank.accounts)
-			).apply(instance, bank -> new Bank())
-	);
-
-    private static PersistentStateType<Bank> type = new PersistentStateType<Bank>(
-            ChestProtection.MOD_ID + ":bank", // Unique identifier for the bank state
-            Bank::createNew, // If there's no 'Bank' yet create one and initialize variables
-            BANK_CODEC,
-            null // Supposed to be an 'DataFixTypes' enum, but we can just pass null
-    );
-
     public static PersistentStateType<Bank> getPersistentStateType() {
-		return new PersistentStateType<>(
-				ChestProtection.MOD_ID,
-				context -> new Bank(),
-				context -> new Codec<>() {
-					@Override
-					public <T> DataResult<Pair<Bank, T>> decode(DynamicOps<T> ops, T input) {
-						return DataResult.success(Pair.of(Bank.createFromNbt((NbtCompound) input), input));
-					}
+        return new PersistentStateType<>(
+                ChestProtection.MOD_ID,
+                context -> new Bank(),
+                context -> new Codec<>() {
+            @Override
+            public <T> DataResult<Pair<Bank, T>> decode(DynamicOps<T> ops, T input) {
+                return DataResult.success(Pair.of(Bank.createFromNbt((NbtCompound) input), input));
+            }
 
-					@Override
-					@SuppressWarnings("unchecked")
-					public <T> DataResult<T> encode(Bank input, DynamicOps<T> ops, T prefix) {
-						if (!(prefix instanceof NbtEnd)) {
-							throw new RuntimeException();
-						}
-						return DataResult.success((T) input.writeNbt(new NbtCompound()));
-					}
-				},
-				null
-		);
-	}
+            @Override
+            @SuppressWarnings("unchecked")
+            public <T> DataResult<T> encode(Bank input, DynamicOps<T> ops, T prefix) {
+                if (!(prefix instanceof NbtEnd)) {
+                    throw new RuntimeException();
+                }
+                return DataResult.success((T) input.writeNbt(new NbtCompound()));
+            }
+        },
+                null
+        );
+    }
 
     public static void deposit(String playerUUID, int amount) {
         if (amount <= 0) {
@@ -100,7 +75,7 @@ public class Bank extends PersistentState {
             accounts.put(playerUUID, START_BALANCE);
         }
         if (accounts.get(playerUUID) < amount) {
-            throw new IllegalArgumentException("Otillräckligt med pengar på kontot");
+            throw new IllegalArgumentException("Otillräckligt med pengar på kontot. Saknas " + (amount - getBalance(playerUUID)) + " blocksdaler.");
         }
         accounts.put(playerUUID, accounts.get(playerUUID) - amount);
     }
@@ -114,7 +89,7 @@ public class Bank extends PersistentState {
             throw new IllegalArgumentException("Överföringsbeloppet måste vara positivt");
         }
         if (!accounts.containsKey(fromPlayerUUID) || accounts.get(fromPlayerUUID) < amount) {
-            throw new IllegalArgumentException("Otillräckligt med pengar på kontot för överföring");
+            throw new IllegalArgumentException("Otillräckligt med pengar på kontot för överföring. Saknas " + (amount - getBalance(fromPlayerUUID)) + " blocksdaler.");
         }
         withdraw(fromPlayerUUID, amount);
         deposit(toPlayerUUID, amount);
@@ -127,7 +102,7 @@ public class Bank extends PersistentState {
             bankNbt.putInt(key, balance);
         });
         nbt.put("bank", bankNbt);
- 
+
         return nbt;
     }
 
@@ -140,7 +115,7 @@ public class Bank extends PersistentState {
             ChestProtection.LOGGER.info("Loading account for UUID {} with balance {}", key, balance);
             bank.accounts.put(key, balance);
         });
- 
+
         return bank;
     }
 
@@ -151,15 +126,15 @@ public class Bank extends PersistentState {
     }
 
     public static Bank getServerState(MinecraftServer server) {
-        // (Note: arbitrary choice to use 'World.OVERWORLD' instead of 'World.END' or 'World.NETHER'.  Any work)
+        // Arbitrary choice to use 'World.OVERWORLD' instead of 'World.END' or 'World.NETHER'. Any work
         ServerWorld serverWorld = server.getWorld(World.OVERWORLD);
         assert serverWorld != null;
- 
+
         return serverWorld.getPersistentStateManager().getOrCreate(getPersistentStateType());
     }
 
     @Override
-	public boolean isDirty() {
-		return true;
-	}
+    public boolean isDirty() {
+        return true;
+    }
 }

@@ -7,6 +7,7 @@ import fbanna.chestprotection.check.CheckChest;
 import fbanna.chestprotection.trade.TradeScreen;
 import fbanna.chestprotection.trade.setup.SetupScreen;
 import fbanna.chestprotection.trade.Bank;
+import fbanna.chestprotection.commands.Commands;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,35 +19,22 @@ import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
 
-import net.minecraft.block.AbstractBlock;
-import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.ChestBlock;
 import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.block.entity.ChestBlockEntity;
 import net.minecraft.item.Items;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.Registry;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.registry.RegistryKeys;
-import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.block.SignBlock;
 import net.minecraft.block.enums.ChestType;
 import net.minecraft.server.MinecraftServer;
 
-import java.util.function.Function;
-import java.util.HashMap;
-import java.util.UUID;
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,6 +51,9 @@ public class ChestProtection implements ModInitializer {
     @Override
     public void onInitialize() {
         LOGGER.info("Nu skyddas dina kistor!");
+
+        // Register commands
+        CommandRegistrationCallback.EVENT.register(Commands::registerCommands);
 
         // Check for block use
         UseBlockCallback.EVENT.register(
@@ -128,25 +119,6 @@ public class ChestProtection implements ModInitializer {
                         world.markDirty(pos);
                         player.sendMessage(
                                 Text.translatable("Kistan är nu upplåst!").formatted(Formatting.YELLOW), true);
-
-                        /* FOR TESTING BANK FUNCTIONALITY
-                        MinecraftServer server = world.getServer();
-                        Bank bank = Bank.getServerState(server);
-                        if (bank != null) {
-                            if (bank.getBalance(player.getUuid().toString()) > 0) {
-                                // Deduct a fee for unlocking the chest
-                                int unlockFee = 10; // Example fee
-                                bank.withdraw(player.getUuid().toString(), unlockFee);
-                                player.sendMessage(
-                                        Text.translatable("Du har betalat %d för att låsa upp kistan.".formatted(unlockFee)).formatted(Formatting.YELLOW), false);
-                                int balance = bank.getBalance(player.getUuid().toString());
-                                player.sendMessage(
-                                        Text.translatable("Nu har du %d blocksdaler".formatted(balance)).formatted(Formatting.BLUE), false);
-                            } else {
-                                player.sendMessage(
-                                        Text.translatable("Du har inte tillräckligt med pengar på ditt konto för att låsa upp kistan.").formatted(Formatting.RED), false);
-                            }
-                        }*/
 
                         // Check for double chest and unlock the other half
                         LOGGER.info("Checking for double chest for unlocking at {}", pos);
@@ -220,22 +192,6 @@ public class ChestProtection implements ModInitializer {
                         Text.translatable("Kistan är låst av %s!".formatted(playerName)).formatted(Formatting.RED), true);
                 return ActionResult.FAIL;
             }
-            /*else if (book.chestStatus == CheckChest.status.SELL) {
-                            SHOPS.add(book);
-                            SimpleGui gui = new TradeScreen((ServerPlayerEntity) player, book);
-                            gui.open();
-
-                            return ActionResult.FAIL;
-                        } else if (book.chestStatus == CheckChest.status.ERROR) {
-                            if (Objects.equals(book.author, player.getName().getString())) {
-                                SimpleGui gui = new SetupScreen((ServerPlayerEntity) player, book);
-                                gui.open();
-                            } else {
-                                player.sendMessage(Text.translatable("Shop is in an error state. Contact %s!".formatted(book.author))
-                                        .formatted(Formatting.RED), true);
-                            }
-                            return ActionResult.FAIL;
-                        }*/
         }
         return ActionResult.PASS;
     }
