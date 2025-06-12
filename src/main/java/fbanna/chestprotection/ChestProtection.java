@@ -1,11 +1,6 @@
 package fbanna.chestprotection;
 
-import eu.pb4.sgui.api.gui.SimpleGui;
-
 import fbanna.chestprotection.check.LockableChest;
-import fbanna.chestprotection.check.CheckChest;
-import fbanna.chestprotection.trade.TradeScreen;
-import fbanna.chestprotection.trade.setup.SetupScreen;
 import fbanna.chestprotection.trade.Bank;
 import fbanna.chestprotection.commands.Commands;
 import fbanna.chestprotection.check.EbinPlayer;
@@ -49,11 +44,7 @@ import org.slf4j.LoggerFactory;
 public class ChestProtection implements ModInitializer {
 
     public static final String MOD_ID = "chestprotection";
-
     public static final Logger LOGGER = LoggerFactory.getLogger("ChestProtection");
-
-    // TODO remove
-    public static List<CheckChest> SHOPS = new ArrayList<>();
 
     @Override
     public void onInitialize() {
@@ -461,7 +452,7 @@ public class ChestProtection implements ModInitializer {
                         ItemStack stack = chestEntity.getStack(i);
                         if (stack.getCount() < stack.getMaxCount()) {
                             // Add to existing stack
-                            chestEntity.setStack(i, chestEntity.getStack(i).copyWithCount(stack.getCount() + 1)); 
+                            chestEntity.setStack(i, chestEntity.getStack(i).copyWithCount(stack.getCount() + 1));
                             itemTransferred = true;
                             break;
                         } else if (stack.isEmpty()) {
