@@ -59,14 +59,14 @@ public class Bank extends PersistentState {
         );
     }
 
-    public static void deposit(String playerUUID, int amount) {
+    public void deposit(String playerUUID, int amount) {
         if (amount <= 0) {
             throw new IllegalArgumentException("Insättningsbeloppet måste vara positivt");
         }
         accounts.put(playerUUID, accounts.getOrDefault(playerUUID, START_BALANCE) + amount);
     }
 
-    public static void withdraw(String playerUUID, int amount) {
+    public void withdraw(String playerUUID, int amount) {
         if (amount <= 0) {
             throw new IllegalArgumentException("Uttagningsbeloppet måste vara positiv");
         }
@@ -80,15 +80,20 @@ public class Bank extends PersistentState {
         accounts.put(playerUUID, accounts.get(playerUUID) - amount);
     }
 
-    public static int getBalance(String playerUUID) {
+    public int getBalance(String playerUUID) {
         return accounts.getOrDefault(playerUUID, START_BALANCE);
     }
 
-    public static void transfer(String fromPlayerUUID, String toPlayerUUID, int amount) {
+    public void transfer(String fromPlayerUUID, String toPlayerUUID, int amount) {
         if (amount <= 0) {
             throw new IllegalArgumentException("Överföringsbeloppet måste vara positivt");
         }
-        if (!accounts.containsKey(fromPlayerUUID) || accounts.get(fromPlayerUUID) < amount) {
+
+        if (!accounts.containsKey(fromPlayerUUID)) {
+            // From player does not have an account, create one with the starting balance
+            accounts.put(fromPlayerUUID, START_BALANCE);
+        }
+        if (accounts.get(fromPlayerUUID) < amount) {
             throw new IllegalArgumentException("Otillräckligt med pengar på kontot för överföring. Saknas " + (amount - getBalance(fromPlayerUUID)) + " blocksdaler.");
         }
         withdraw(fromPlayerUUID, amount);

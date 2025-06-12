@@ -20,25 +20,21 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import fbanna.chestprotection.check.LockableChest;
 
 @Mixin(ChestBlockEntity.class)
-public class LockableChestBlockEntityMixin implements LockableChest {
-
+public class MixinLockableChestBlockEntity implements LockableChest {
     @Unique
     private String lockOwnerID;
 
     @Unique
     private String lockOwnerName;
 
-    @Unique
-    private boolean selling;
-
-    @Unique
-    private boolean buying;
-
     @Inject(method = "readNbt", at = @At("TAIL"))
     private void readLockData(NbtCompound nbt, RegistryWrapper.WrapperLookup registryLookup, CallbackInfo ci) {
         if (nbt.contains("lockOwnerID")) {
             this.lockOwnerID = nbt.getString("lockOwnerID").isPresent() ? nbt.getString("lockOwnerID").get() : null;
             this.lockOwnerName = nbt.getString("lockOwnerName").isPresent() ? nbt.getString("lockOwnerName").get() : null;
+        } else {
+            this.lockOwnerID = null;
+            this.lockOwnerName = null;
         }
     }
 
@@ -47,6 +43,9 @@ public class LockableChestBlockEntityMixin implements LockableChest {
         if (lockOwnerID != null) {
             nbt.putString("lockOwnerID", lockOwnerID);
             nbt.putString("lockOwnerName", lockOwnerName);
+        } else {
+            nbt.remove("lockOwnerID");
+            nbt.remove("lockOwnerName");
         }
     }
 

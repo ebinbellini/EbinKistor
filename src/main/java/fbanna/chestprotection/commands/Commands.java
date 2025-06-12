@@ -35,7 +35,7 @@ public class Commands {
                     return 1;
                 }))
                 // Pay command
-                .then(CommandManager.literal("ge")
+                .then(CommandManager.literal("betala")
                         .then(CommandManager.argument("mottagare", StringArgumentType.word())
                                 .then(CommandManager.argument("summa", IntegerArgumentType.integer(1))
                                         .executes(context -> {
