@@ -1,10 +1,10 @@
-package fbanna.chestprotection;
+package ebinbellini.ebinkistor;
 
-import fbanna.chestprotection.check.LockableChest;
-import fbanna.chestprotection.trade.Bank;
-import fbanna.chestprotection.commands.Commands;
-import fbanna.chestprotection.check.EbinPlayer;
-import fbanna.chestprotection.check.ShopableSign;
+import ebinbellini.ebinkistor.check.LockableChest;
+import ebinbellini.ebinkistor.trade.Bank;
+import ebinbellini.ebinkistor.commands.Commands;
+import ebinbellini.ebinkistor.check.EbinPlayer;
+import ebinbellini.ebinkistor.check.ShopableSign;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,10 +41,10 @@ import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ChestProtection implements ModInitializer {
+public class EbinKistor implements ModInitializer {
 
-    public static final String MOD_ID = "chestprotection";
-    public static final Logger LOGGER = LoggerFactory.getLogger("ChestProtection");
+    public static final String MOD_ID = "ebinkistor";
+    public static final Logger LOGGER = LoggerFactory.getLogger("EbinKistor");
 
     @Override
     public void onInitialize() {

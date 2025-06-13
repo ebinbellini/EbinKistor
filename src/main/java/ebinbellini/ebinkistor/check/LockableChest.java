@@ -1,4 +1,4 @@
-package fbanna.chestprotection.check;
+package ebinbellini.ebinkistor.check;
 
 public interface LockableChest {
     boolean isLocked();

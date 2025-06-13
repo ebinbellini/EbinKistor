@@ -1,4 +1,4 @@
-package fbanna.chestprotection.trade;
+package ebinbellini.ebinkistor.trade;
 
 import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Codec;
@@ -27,7 +27,7 @@ import net.minecraft.world.PersistentStateType;
 import net.minecraft.world.PersistentStateType;
 import net.minecraft.world.World;
 
-import fbanna.chestprotection.ChestProtection;
+import ebinbellini.ebinkistor.EbinKistor;
 
 public class Bank extends PersistentState {
 
@@ -38,7 +38,7 @@ public class Bank extends PersistentState {
 
     public static PersistentStateType<Bank> getPersistentStateType() {
         return new PersistentStateType<>(
-                ChestProtection.MOD_ID,
+                EbinKistor.MOD_ID,
                 context -> new Bank(),
                 context -> new Codec<>() {
             @Override
@@ -101,7 +101,7 @@ public class Bank extends PersistentState {
     }
 
     public NbtCompound writeNbt(NbtCompound nbt) {
-        ChestProtection.LOGGER.info("Saving bank state with {} accounts", accounts.size());
+        EbinKistor.LOGGER.info("Saving bank state with {} accounts", accounts.size());
         NbtCompound bankNbt = new NbtCompound();
         accounts.forEach((key, balance) -> {
             bankNbt.putInt(key, balance);
@@ -117,7 +117,7 @@ public class Bank extends PersistentState {
         NbtCompound bankNbt = tag.getCompound("bank").orElse(new NbtCompound());
         bankNbt.getKeys().forEach(key -> {
             Integer balance = bankNbt.getInt(key).orElse(START_BALANCE);
-            ChestProtection.LOGGER.info("Loading account for UUID {} with balance {}", key, balance);
+            EbinKistor.LOGGER.info("Loading account for UUID {} with balance {}", key, balance);
             bank.accounts.put(key, balance);
         });
 

@@ -1,6 +1,6 @@
-package fbanna.chestprotection.mixin;
+package ebinbellini.ebinkistor.mixin;
 
-import fbanna.chestprotection.check.LockableChest;
+import ebinbellini.ebinkistor.check.LockableChest;
 import net.minecraft.block.ChestBlock;
 import net.minecraft.block.enums.ChestType;
 import net.minecraft.item.ItemPlacementContext;

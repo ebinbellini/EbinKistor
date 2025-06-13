@@ -1,4 +1,4 @@
-package fbanna.chestprotection.mixin;
+package ebinbellini.ebinkistor.mixin;
 
 import net.minecraft.block.entity.HopperBlockEntity;
 import net.minecraft.component.DataComponentTypes;
@@ -13,9 +13,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import fbanna.chestprotection.check.LockableChest;
+import ebinbellini.ebinkistor.check.LockableChest;
 
-import fbanna.chestprotection.ChestProtection;
+import ebinbellini.ebinkistor.EbinKistor;
 
 import java.util.Objects;
 

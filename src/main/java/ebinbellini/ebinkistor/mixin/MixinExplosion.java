@@ -1,9 +1,9 @@
-package fbanna.chestprotection.mixin;
+package ebinbellini.ebinkistor.mixin;
 
 import java.util.List;
 
-import fbanna.chestprotection.ChestProtection;
-import fbanna.chestprotection.check.LockableChest;
+import ebinbellini.ebinkistor.EbinKistor;
+import ebinbellini.ebinkistor.check.LockableChest;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ChestBlock;
 import net.minecraft.entity.Entity;

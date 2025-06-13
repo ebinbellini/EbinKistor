@@ -1,17 +1,18 @@
 {
 	"schemaVersion": 1,
-	"id": "chestprotection",
+	"id": "ebinkistor",
 	"version": "${version}",
-	"name": "Chest Protection",
+	"name": "Ebin Kistor",
 	"description": "Lock your chests!",
 	"authors": [
-		"FBanna"
+		"FBanna",
+		"ebinbellini"
 	],
 	"license": "CC0-1.0",
 	"environment": "*",
 	"entrypoints": {
 		"main": [
-			"fbanna.chestprotection.ChestProtection"
+			"ebinbellini.ebinkistor.EbinKistor"
 		]
 	},
 	"depends": {
@@ -21,7 +22,6 @@
 		"fabric-api": "*"
 	},
 	"mixins": [
-		"chestprotection.mixin.json"
+		"ebinkistor.mixin.json"
 	]
-
 }

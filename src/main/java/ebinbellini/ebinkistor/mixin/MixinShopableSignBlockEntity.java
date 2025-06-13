@@ -1,12 +1,13 @@
-package fbanna.chestprotection.mixin;
+package ebinbellini.ebinkistor.mixin;
 
-import net.minecraft.block.entity.ChestBlockEntity;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.BlockState;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.registry.RegistryWrapper;
+
+import net.minecraft.block.entity.SignBlockEntity;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -17,10 +18,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import fbanna.chestprotection.check.LockableChest;
+import ebinbellini.ebinkistor.check.ShopableSign;
 
-@Mixin(ChestBlockEntity.class)
-public class MixinLockableChestBlockEntity implements LockableChest {
+
+@Mixin(SignBlockEntity.class)
+public class MixinShopableSignBlockEntity implements ShopableSign {
+    @Unique
+    private BlockPos shopPosition;
+
     @Unique
     private String lockOwnerID;
 
@@ -36,6 +41,17 @@ public class MixinLockableChestBlockEntity implements LockableChest {
             this.lockOwnerID = null;
             this.lockOwnerName = null;
         }
+
+        if (nbt.contains("shopPosition")) {
+            NbtCompound shopPosNbt = nbt.getCompound("shopPosition").get();
+            this.shopPosition = new BlockPos(
+                shopPosNbt.getInt("x").get(),
+                shopPosNbt.getInt("y").get(),
+                shopPosNbt.getInt("z").get()
+            );
+        } else {
+            this.shopPosition = null;
+        }
     }
 
     @Inject(method = "writeNbt", at = @At("TAIL"))
@@ -47,26 +63,42 @@ public class MixinLockableChestBlockEntity implements LockableChest {
             nbt.remove("lockOwnerID");
             nbt.remove("lockOwnerName");
         }
+
+        if (shopPosition != null) {
+            NbtCompound shopPosNbt = new NbtCompound();
+            shopPosNbt.putInt("x", shopPosition.getX());
+            shopPosNbt.putInt("y", shopPosition.getY());
+            shopPosNbt.putInt("z", shopPosition.getZ());
+            nbt.put("shopPosition", shopPosNbt);
+        } else {
+            nbt.remove("shopPosition");
+        }
     }
 
     @Unique
-    public boolean isLocked() {
-        return lockOwnerID != null && !lockOwnerID.equals("");
+    public boolean isShop() {
+        return this.shopPosition != null;
     }
 
     @Unique
-    public void setLockingPlayer(String id, String name) {
+    public void setShopChestPosition(BlockPos pos, String id, String name) {
+        this.shopPosition = pos;
         this.lockOwnerID = id;
         this.lockOwnerName = name;
     }
 
     @Unique
-    public String getLockOwner() {
+    public BlockPos getShopChestPosition() {
+        return this.shopPosition;
+    }
+
+    @Unique
+    public String getShopOwner() {
         return lockOwnerName;
     }
 
     @Unique
-    public String getLockID() {
+    public String getShopID() {
         return lockOwnerID;
     }
 }

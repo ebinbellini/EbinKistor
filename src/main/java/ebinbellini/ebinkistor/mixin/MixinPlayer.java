@@ -1,11 +1,11 @@
-package fbanna.chestprotection.mixin;
+package ebinbellini.ebinkistor.mixin;
 
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.BlockPos;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 
-import fbanna.chestprotection.check.EbinPlayer;
+import ebinbellini.ebinkistor.check.EbinPlayer;
 
 @Mixin(PlayerEntity.class)
 public class MixinPlayer implements EbinPlayer {

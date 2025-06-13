@@ -1,9 +1,9 @@
-package fbanna.chestprotection.commands;
+package ebinbellini.ebinkistor.commands;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
-import fbanna.chestprotection.trade.Bank;
+import ebinbellini.ebinkistor.trade.Bank;
 import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.CommandManager;

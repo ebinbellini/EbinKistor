@@ -1,4 +1,4 @@
-package fbanna.chestprotection.check;
+package ebinbellini.ebinkistor.check;
 
 import net.minecraft.util.math.BlockPos;
 

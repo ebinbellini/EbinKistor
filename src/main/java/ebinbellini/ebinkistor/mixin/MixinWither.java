@@ -1,8 +1,8 @@
-package fbanna.chestprotection.mixin;
+package ebinbellini.ebinkistor.mixin;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.sugar.Local;
-import fbanna.chestprotection.check.LockableChest;
+import ebinbellini.ebinkistor.check.LockableChest;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.boss.WitherEntity;
 import net.minecraft.util.math.BlockPos;
