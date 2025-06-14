@@ -24,10 +24,14 @@ import net.minecraft.block.entity.ChestBlockEntity;
 import net.minecraft.block.entity.SignBlockEntity;
 import net.minecraft.block.entity.SignText;
 import net.minecraft.block.enums.ChestType;
+import net.minecraft.component.type.ItemEnchantmentsComponent;
+import net.minecraft.enchantment.Enchantment;
+import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.text.MutableText;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
@@ -296,12 +300,16 @@ public class EbinKistor implements ModInitializer {
             int firstItemIndex = -1;
             for (int i = 0; i < chestEntity.size(); i++) {
                 ItemStack stack = chestEntity.getStack(i);
-                if (!stack.isEmpty()) {
-                    if (stack.getCount() > 0) {
+                if (!stack.isEmpty() && stack.getCount() > 0) {
+                    if (firstItem.isEmpty()) {
+                        // Found the first item
                         firstItem = stack;
                         firstItemIndex = i;
-                    } else if (!stack.isEmpty() && !firstItem.isOf(stack.getItem())) {
-                        // There are multiple different items in the chest
+                    }
+
+                    boolean sameEnchantments = EnchantmentHelper.getEnchantments(firstItem).equals(EnchantmentHelper.getEnchantments(stack));
+                    if (!firstItem.isOf(stack.getItem()) || !sameEnchantments) {
+                        // There are multiple different items or items with different enchantments in the chest
                         hasMultipleItems = true;
                         break;
                     }
@@ -322,7 +330,26 @@ public class EbinKistor implements ModInitializer {
                 }
 
                 // Print what the shop is selling
-                String itemName = firstItem.getItemName().getString();
+                MutableText itemName = firstItem.getItemName().copy();
+
+                // Add enchantment information if present
+                if (firstItem.hasEnchantments() || firstItem.isOf(Items.ENCHANTED_BOOK)) {
+                    ItemEnchantmentsComponent itemEnchantments = EnchantmentHelper.getEnchantments(firstItem);
+                    MutableText enchantmentsText = Text.literal("");
+                    itemEnchantments.getEnchantments().forEach(enchantmentEntry -> {
+                        int level = itemEnchantments.getLevel(enchantmentEntry);
+                        Text enchantmentName = Enchantment.getName(enchantmentEntry, level);
+                        if (!enchantmentsText.getString().isEmpty()) {
+                            enchantmentsText.append(", ");
+                        }
+                        enchantmentsText.append(enchantmentName);
+                    });
+                    if (!enchantmentsText.getString().isEmpty()) {
+                        itemName = itemName.append(" (Förtrollningar: ").append(enchantmentsText).append(")");
+                    }
+                } else {
+                    LOGGER.info("Item has no enchantments.");
+                }
 
                 if (hasMultipleItems) {
                     player.sendMessage(Text.literal("Butiken säljer flera olika saker. Det tillåts inte!").formatted(Formatting.RED), false);
@@ -331,7 +358,10 @@ public class EbinKistor implements ModInitializer {
 
                 EbinPlayer ebinPlayer = (EbinPlayer) player;
                 if (ebinPlayer.getLastShopPos() == null || !ebinPlayer.getLastShopPos().equals(pos)) {
-                    player.sendMessage(Text.literal("Butiken säljer " + itemName + " för " + price + " blocksdaler").formatted(Formatting.YELLOW), false);
+                    player.sendMessage(Text.literal("Butiken säljer").formatted(Formatting.YELLOW)
+                            .append(Text.literal(" ").formatted(Formatting.YELLOW))
+                            .append(itemName.formatted(Formatting.AQUA))
+                            .append(Text.literal(" för " + price + " blocksdaler").formatted(Formatting.YELLOW)), false);
                     player.sendMessage(Text.literal("Klicka igen på skylten för att köpa").formatted(Formatting.YELLOW), false);
                     player.sendMessage(Text.literal("Du kan smyga för att köpa 64 st.").formatted(Formatting.YELLOW), false);
                     ebinPlayer.setLastShopPos(pos);
@@ -391,7 +421,10 @@ public class EbinKistor implements ModInitializer {
                     }
 
                     playerMoney = bank.getBalance(player.getUuid().toString());
-                    player.sendMessage(Text.literal("Du köpte " + itemsBought + " st. " + itemName + " för " + (itemsBought * price) + " blocksdaler").formatted(Formatting.GREEN), false);
+                    player.sendMessage(Text.literal("Du köpte " + itemsBought + " st. ")
+                            .append(itemName)
+                            .append(" för " + (itemsBought * price) + " blocksdaler")
+                            .formatted(Formatting.GREEN), false);
                     player.sendMessage(Text.literal("Du har nu " + playerMoney + " blocksdaler kvar").formatted(Formatting.GREEN), false);
 
                     world.markDirty(shopableSign.getShopChestPosition());
@@ -409,6 +442,7 @@ public class EbinKistor implements ModInitializer {
                     player.sendMessage(Text.literal("Klicka igen på skylten för att sälja det du håller i").formatted(Formatting.YELLOW), false);
                     player.sendMessage(Text.literal("Du kan smyga för att sälja allt i din hand").formatted(Formatting.YELLOW), false);
                     ebinPlayer.setLastShopPos(pos);
+                    return ActionResult.FAIL;
                 }
 
                 if (player.getStackInHand(hand).isEmpty()) {
@@ -427,7 +461,14 @@ public class EbinKistor implements ModInitializer {
 
                 // Check if the item is the same as the one in the shop
                 if (!itemToSell.isOf(firstItem.getItem())) {
-                    player.sendMessage(Text.literal("Du kan bara sälja " + itemName + " till butiken!").formatted(Formatting.RED), false);
+                    player.sendMessage(Text.literal("Du kan bara sälja ").append(itemName).append(" till butiken!").formatted(Formatting.RED), false);
+                    return ActionResult.FAIL;
+                }
+
+                // Check if the item has the same enchantments as the one in the shop
+                boolean sameEnchantments = EnchantmentHelper.getEnchantments(firstItem).equals(EnchantmentHelper.getEnchantments(itemToSell));
+                if (!sameEnchantments) {
+                    player.sendMessage(Text.literal("Du kan bara sälja ").append(itemName).append(" med samma förtrollningar!").formatted(Formatting.RED), false);
                     return ActionResult.FAIL;
                 }
 
@@ -437,12 +478,19 @@ public class EbinKistor implements ModInitializer {
                     return ActionResult.FAIL;
                 }
 
+
                 int itemsSold = 0;
                 while (itemsToSellCount > itemsSold) {
                     // Check if the player has enough money
-                    int playerMoney = bank.getBalance(player.getUuid().toString());
-                    if (playerMoney < price) {
-                        player.sendMessage(Text.literal("Du har inte tillräckligt med pengar för att sälja!").formatted(Formatting.RED), false);
+                    int shopMoney = bank.getBalance(shopableSign.getShopID());
+                    if (shopMoney < price) {
+                        player.sendMessage(Text.literal("Butiken har inte tillräckligt med pengar för att sälja!").formatted(Formatting.RED), false);
+                        break;
+                    }
+
+                    // Check if the player is holding the item to sell
+                    itemToSell = player.getStackInHand(hand);
+                    if (itemToSell.isEmpty() || itemToSell.getCount() < 1) {
                         break;
                     }
 
@@ -450,13 +498,13 @@ public class EbinKistor implements ModInitializer {
                     boolean itemTransferred = false;
                     for (int i = 0; i < chestEntity.size(); i++) {
                         ItemStack stack = chestEntity.getStack(i);
-                        if (stack.getCount() < stack.getMaxCount()) {
-                            // Add to existing stack
-                            chestEntity.setStack(i, chestEntity.getStack(i).copyWithCount(stack.getCount() + 1));
+                        if (stack.isEmpty()) {
+                            chestEntity.setStack(i, itemToSell.split(1));
                             itemTransferred = true;
                             break;
-                        } else if (stack.isEmpty()) {
-                            chestEntity.setStack(i, itemToSell.split(1));
+                        } else if (stack.getCount() < stack.getMaxCount()) {
+                            // Add to existing stack
+                            chestEntity.setStack(i, chestEntity.getStack(i).copyWithCount(stack.getCount() + 1));
                             itemTransferred = true;
                             break;
                         }
