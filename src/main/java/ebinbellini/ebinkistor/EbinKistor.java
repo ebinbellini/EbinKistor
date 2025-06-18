@@ -145,7 +145,7 @@ public class EbinKistor implements ModInitializer {
                                 }
                             }
                         } else {
-                            // If locked, update the locking player information
+                            // If locked show the chest's owner
                             player.sendMessage(
                                     Text.translatable("Kistan är redan låst av %s.".formatted(lockableChest.getLockOwner()))
                                             .formatted(Formatting.BLUE), true);
@@ -185,7 +185,7 @@ public class EbinKistor implements ModInitializer {
                 return ActionResult.FAIL;
             }
 
-            if (player.getStackInHand(hand).isOf(Items.REDSTONE)) {
+            if (player.getStackInHand(hand).isOf(Items.REDSTONE) || player.getStackInHand(hand).isOf(Items.EMERALD)) {
                 LockableChest lockableChest = (LockableChest) world.getBlockEntity(hitResult.getBlockPos());
                 if (!lockableChest.isLocked()) {
                     player.sendMessage(
@@ -215,11 +215,21 @@ public class EbinKistor implements ModInitializer {
                     return ActionResult.FAIL;
                 }
 
+                // Check if the player is trying to create a server shop
+                Boolean isServerShop = player.getStackInHand(hand).isOf(Items.EMERALD);
+                if (isServerShop && !player.hasPermissionLevel(4)) {
+                    player.sendMessage(
+                            Text.translatable("Du måste vara administratör för att skapa en statlig butik!").formatted(Formatting.RED), false);
+                    return ActionResult.FAIL;
+                }
+
                 String playerID = player.getUuid().toString();
                 String playerName = player.getName().getString();
-                signEntity.setShopChestPosition(hitResult.getBlockPos(), playerID, playerName);
+                signEntity.setShopChestPosition(hitResult.getBlockPos(), playerID, playerName, isServerShop);
                 player.sendMessage(Text.translatable("Din butik är nu skapad!").formatted(Formatting.GREEN), false);
                 ebinPlayer.setLastSignPos(null);
+                world.markDirty(hitResult.getBlockPos());
+                world.markDirty(signEntity.getShopChestPosition());
 
                 return ActionResult.FAIL;
             }
@@ -245,8 +255,8 @@ public class EbinKistor implements ModInitializer {
         SignBlockEntity signEntity = (SignBlockEntity) world.getBlockEntity(pos);
         ShopableSign shopableSign = (ShopableSign) signEntity;
 
-        // Check if the player is holding redstone dust
-        if (hand != null && player.getStackInHand(hand).isOf(Items.REDSTONE)) {
+        // Check if the player is holding redstone dust or an emerald
+        if (hand != null && player.getStackInHand(hand).isOf(Items.REDSTONE) || player.getStackInHand(hand).isOf(Items.EMERALD)) {
             if (shopableSign.getShopChestPosition() != null) {
                 player.sendMessage(
                         Text.translatable("Denna skylt är redan kopplad till en butik!").formatted(Formatting.RED), false);
@@ -347,8 +357,6 @@ public class EbinKistor implements ModInitializer {
                     if (!enchantmentsText.getString().isEmpty()) {
                         itemName = itemName.append(" (Förtrollningar: ").append(enchantmentsText).append(")");
                     }
-                } else {
-                    LOGGER.info("Item has no enchantments.");
                 }
 
                 if (hasMultipleItems) {
@@ -358,12 +366,18 @@ public class EbinKistor implements ModInitializer {
 
                 EbinPlayer ebinPlayer = (EbinPlayer) player;
                 if (ebinPlayer.getLastShopPos() == null || !ebinPlayer.getLastShopPos().equals(pos)) {
-                    player.sendMessage(Text.literal("Butiken säljer").formatted(Formatting.YELLOW)
-                            .append(Text.literal(" ").formatted(Formatting.YELLOW))
-                            .append(itemName.formatted(Formatting.AQUA))
-                            .append(Text.literal(" för " + price + " blocksdaler").formatted(Formatting.YELLOW)), false);
+                    player.sendMessage(Text.literal("Butiken säljer ").formatted(Formatting.YELLOW)
+                        .append(itemName.formatted(Formatting.AQUA))
+                        .append(" för ").formatted(Formatting.YELLOW)
+                        .append(Text.literal("" + price).formatted(Formatting.GOLD))
+                        .append(" blocksdaler").formatted(Formatting.YELLOW), false);
                     player.sendMessage(Text.literal("Klicka igen på skylten för att köpa").formatted(Formatting.YELLOW), false);
                     player.sendMessage(Text.literal("Du kan smyga för att köpa 64 st.").formatted(Formatting.YELLOW), false);
+                    if (!shopableSign.isServerShop()) {
+                        player.sendMessage(Text.literal("Butiken drivs av " + shopableSign.getShopOwner()).formatted(Formatting.YELLOW), false);
+                    } else {
+                        player.sendMessage(Text.literal("Detta är en statlig butik").formatted(Formatting.YELLOW), false);
+                    }
                     ebinPlayer.setLastShopPos(pos);
                 } else {
                     // Player clicked the sign again to buy
@@ -377,23 +391,30 @@ public class EbinKistor implements ModInitializer {
                     }
 
                     while (itemsToBuy > itemsBought) {
-                        // Deduct money from the player's account
-                        bank.transfer(player.getUuid().toString(), shopableSign.getShopID(), price);
+                        if (shopableSign.isServerShop()) {
+                            // Deduct money from the player's account
+                            bank.withdraw(player.getUuid().toString(), price);
+                        } else {
+                            // Transfer money from the player's account to the shop owner's account
+                            bank.transfer(player.getUuid().toString(), shopableSign.getShopID(), price);
+                        }
                         playerMoney -= price;
 
-                        firstItem = ItemStack.EMPTY;
-                        firstItemIndex = -1;
-                        for (int i = 0; i < chestEntity.size(); i++) {
-                            ItemStack stack = chestEntity.getStack(i);
-                            if (!stack.isEmpty() && stack.getCount() > 0) {
-                                firstItem = stack;
-                                firstItemIndex = i;
+                        if (!shopableSign.isServerShop()) {
+                            firstItem = ItemStack.EMPTY;
+                            firstItemIndex = -1;
+                            for (int i = 0; i < chestEntity.size(); i++) {
+                                ItemStack stack = chestEntity.getStack(i);
+                                if (!stack.isEmpty() && stack.getCount() > 0) {
+                                    firstItem = stack;
+                                    firstItemIndex = i;
+                                }
                             }
-                        }
 
-                        if (firstItem.isEmpty()) {
-                            player.sendMessage(Text.literal("Butiken har inget mer att sälja!").formatted(Formatting.RED), false);
-                            break;
+                            if (firstItem.isEmpty()) {
+                                player.sendMessage(Text.literal("Butiken har inget mer att sälja!").formatted(Formatting.RED), false);
+                                break;
+                            }
                         }
 
                         // Give the item to the player
@@ -404,11 +425,13 @@ public class EbinKistor implements ModInitializer {
                             player.dropItem(itemToGive, false);
                         }
 
-                        // Remove the item from the shop chest
-                        if (firstItem.getCount() > 1) {
-                            firstItem.decrement(1);
-                        } else {
-                            chestEntity.setStack(firstItemIndex, ItemStack.EMPTY);
+                        if (!shopableSign.isServerShop()) {
+                            // Remove the item from the shop chest
+                            if (firstItem.getCount() > 1) {
+                                firstItem.decrement(1);
+                            } else {
+                                chestEntity.setStack(firstItemIndex, ItemStack.EMPTY);
+                            }
                         }
 
                         itemsBought++;
@@ -422,10 +445,13 @@ public class EbinKistor implements ModInitializer {
 
                     playerMoney = bank.getBalance(player.getUuid().toString());
                     player.sendMessage(Text.literal("Du köpte " + itemsBought + " st. ")
-                            .append(itemName)
-                            .append(" för " + (itemsBought * price) + " blocksdaler")
-                            .formatted(Formatting.GREEN), false);
-                    player.sendMessage(Text.literal("Du har nu " + playerMoney + " blocksdaler kvar").formatted(Formatting.GREEN), false);
+                            .append(itemName.formatted(Formatting.AQUA))
+                            .append(Text.literal(" för ").formatted(Formatting.GREEN))
+                            .append(Text.literal("" + itemsBought * price).formatted(Formatting.GOLD))
+                            .append(" blocksdaler").formatted(Formatting.GREEN), false);
+                    player.sendMessage(Text.literal("Du har nu ").formatted(Formatting.GREEN)
+                            .append(Text.literal("" + playerMoney).formatted(Formatting.GOLD))
+                            .append(" blocksdaler kvar").formatted(Formatting.GREEN), false);
 
                     world.markDirty(shopableSign.getShopChestPosition());
                 }
@@ -438,9 +464,18 @@ public class EbinKistor implements ModInitializer {
 
                 EbinPlayer ebinPlayer = (EbinPlayer) player;
                 if (ebinPlayer.getLastShopPos() == null || !ebinPlayer.getLastShopPos().equals(pos)) {
-                    player.sendMessage(Text.literal("Butiken köper " + firstItem.getItemName().getString() + " för " + price + " blocksdaler").formatted(Formatting.YELLOW), false);
+                    player.sendMessage(Text.literal("Butiken köper ").formatted(Formatting.YELLOW)
+                        .append(firstItem.getItemName().copy().formatted(Formatting.AQUA))
+                        .append(" för ").formatted(Formatting.YELLOW)
+                        .append(Text.literal("" + price).formatted(Formatting.GOLD))
+                        .append(" blocksdaler").formatted(Formatting.YELLOW), false);
                     player.sendMessage(Text.literal("Klicka igen på skylten för att sälja det du håller i").formatted(Formatting.YELLOW), false);
                     player.sendMessage(Text.literal("Du kan smyga för att sälja allt i din hand").formatted(Formatting.YELLOW), false);
+                    if (!shopableSign.isServerShop()) {
+                        player.sendMessage(Text.literal("Butiken drivs av " + shopableSign.getShopOwner()).formatted(Formatting.YELLOW), false);
+                    } else {
+                        player.sendMessage(Text.literal("Detta är en statlig butik").formatted(Formatting.YELLOW), false);
+                    }
                     ebinPlayer.setLastShopPos(pos);
                     return ActionResult.FAIL;
                 }
@@ -457,7 +492,7 @@ public class EbinKistor implements ModInitializer {
                 }
 
                 int itemsToSellCount = player.isSneaking() ? itemToSell.getCount() : 1;
-                String itemName = firstItem.getItemName().getString();
+                MutableText itemName = firstItem.getItemName().copy().formatted(Formatting.AQUA);
 
                 // Check if the item is the same as the one in the shop
                 if (!itemToSell.isOf(firstItem.getItem())) {
@@ -474,18 +509,19 @@ public class EbinKistor implements ModInitializer {
 
                 // Check if the player has enough items to sell
                 if (itemToSell.getCount() < 1) {
-                    player.sendMessage(Text.literal("Du har inte tillräckligt med " + itemName + " att sälja!").formatted(Formatting.RED), false);
+                    player.sendMessage(Text.literal("Du har inte tillräckligt med ").append(itemName).append(" att sälja!").formatted(Formatting.RED), false);
                     return ActionResult.FAIL;
                 }
 
-
                 int itemsSold = 0;
                 while (itemsToSellCount > itemsSold) {
-                    // Check if the player has enough money
-                    int shopMoney = bank.getBalance(shopableSign.getShopID());
-                    if (shopMoney < price) {
-                        player.sendMessage(Text.literal("Butiken har inte tillräckligt med pengar för att sälja!").formatted(Formatting.RED), false);
-                        break;
+                    if (!shopableSign.isServerShop()) {
+                        // Check if the shop owner has enough money
+                        int shopMoney = bank.getBalance(shopableSign.getShopID());
+                        if (shopMoney < price) {
+                            player.sendMessage(Text.literal("Butiken är bankrutt och kan således inte köpa mer!").formatted(Formatting.RED), false);
+                            break;
+                        }
                     }
 
                     // Check if the player is holding the item to sell
@@ -494,32 +530,39 @@ public class EbinKistor implements ModInitializer {
                         break;
                     }
 
-                    // Add the item to the shop chest
-                    boolean itemTransferred = false;
-                    for (int i = 0; i < chestEntity.size(); i++) {
-                        ItemStack stack = chestEntity.getStack(i);
-                        if (stack.isEmpty()) {
-                            chestEntity.setStack(i, itemToSell.split(1));
-                            itemTransferred = true;
-                            break;
-                        } else if (stack.getCount() < stack.getMaxCount()) {
-                            // Add to existing stack
-                            chestEntity.setStack(i, chestEntity.getStack(i).copyWithCount(stack.getCount() + 1));
-                            itemTransferred = true;
+                    if (!shopableSign.isServerShop()) {
+                        // Add the item to the shop chest
+                        boolean itemTransferred = false;
+                        for (int i = 0; i < chestEntity.size(); i++) {
+                            ItemStack stack = chestEntity.getStack(i);
+                            if (stack.isEmpty()) {
+                                chestEntity.setStack(i, itemToSell.split(1));
+                                itemTransferred = true;
+                                break;
+                            } else if (stack.getCount() < stack.getMaxCount()) {
+                                // Add to existing stack
+                                chestEntity.setStack(i, chestEntity.getStack(i).copyWithCount(stack.getCount() + 1));
+                                itemTransferred = true;
+                                break;
+                            }
+                        }
+
+                        if (!itemTransferred) {
+                            player.sendMessage(Text.literal("Butiken har inte plats för fler ").formatted(Formatting.RED).append(itemName), false);
                             break;
                         }
-                    }
-
-                    if (!itemTransferred) {
-                        player.sendMessage(Text.literal("Butiken har inte plats för fler " + itemName).formatted(Formatting.RED), false);
-                        break;
                     }
 
                     // Remove one item from the player's hand
                     itemToSell.decrement(1);
 
-                    // Transfer money from the shop's account to the player's account
-                    bank.transfer(shopableSign.getShopID(), player.getUuid().toString(), price);
+                    if (!shopableSign.isServerShop()) {
+                        // Transfer money from the shop's account to the player's account
+                        bank.transfer(shopableSign.getShopID(), player.getUuid().toString(), price);
+                    } else {
+                        // Deposit money into the player's account
+                        bank.deposit(player.getUuid().toString(), price);
+                    }
                     itemsSold++;
                 }
 
@@ -527,8 +570,14 @@ public class EbinKistor implements ModInitializer {
 
                 int playerMoney = bank.getBalance(player.getUuid().toString());
                 if (itemsSold > 0) {
-                    player.sendMessage(Text.literal("Du sålde " + itemsSold + " st. " + itemName + " för " + (itemsSold * price) + " blocksdaler").formatted(Formatting.GREEN), false);
-                    player.sendMessage(Text.literal("Du har nu " + playerMoney + " blocksdaler kvar").formatted(Formatting.GREEN), false);
+                    player.sendMessage(Text.literal("Du sålde " + itemsSold + " st. ")
+                            .append(itemName)
+                            .append(Text.literal(" för ").formatted(Formatting.GREEN))
+                            .append(Text.literal("" + itemsSold * price).formatted(Formatting.GOLD))
+                            .append(" blocksdaler").formatted(Formatting.GREEN), false);
+                    player.sendMessage(Text.literal("Du har nu ").formatted(Formatting.GREEN)
+                            .append(Text.literal("" + playerMoney).formatted(Formatting.GOLD))
+                            .append(Text.literal(" blocksdaler").formatted(Formatting.GREEN)), false);
                 }
             }
 

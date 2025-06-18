@@ -32,6 +32,9 @@ public class MixinShopableSignBlockEntity implements ShopableSign {
     @Unique
     private String lockOwnerName;
 
+    @Unique
+    private Boolean serverShop = false;
+
     @Inject(method = "readNbt", at = @At("TAIL"))
     private void readLockData(NbtCompound nbt, RegistryWrapper.WrapperLookup registryLookup, CallbackInfo ci) {
         if (nbt.contains("lockOwnerID")) {
@@ -51,6 +54,12 @@ public class MixinShopableSignBlockEntity implements ShopableSign {
             );
         } else {
             this.shopPosition = null;
+        }
+
+        if (nbt.contains("serverShop")) {
+            this.serverShop = nbt.getBoolean("serverShop").get();
+        } else {
+            this.serverShop = false;
         }
     }
 
@@ -73,6 +82,8 @@ public class MixinShopableSignBlockEntity implements ShopableSign {
         } else {
             nbt.remove("shopPosition");
         }
+
+        nbt.putBoolean("serverShop", serverShop != null ? serverShop : false);
     }
 
     @Unique
@@ -81,10 +92,11 @@ public class MixinShopableSignBlockEntity implements ShopableSign {
     }
 
     @Unique
-    public void setShopChestPosition(BlockPos pos, String id, String name) {
+    public void setShopChestPosition(BlockPos pos, String id, String name, boolean serverShop) {
         this.shopPosition = pos;
         this.lockOwnerID = id;
         this.lockOwnerName = name;
+        this.serverShop = serverShop;
     }
 
     @Unique
@@ -100,5 +112,10 @@ public class MixinShopableSignBlockEntity implements ShopableSign {
     @Unique
     public String getShopID() {
         return lockOwnerID;
+    }
+
+    @Unique
+    public boolean isServerShop() {
+        return serverShop != null && serverShop;
     }
 }
